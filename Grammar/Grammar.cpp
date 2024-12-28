@@ -8,10 +8,11 @@ Grammar::Grammar(
     : nonterminals_(nonterminals),
       alphabet_(alphabet),
       rules_(rules),
-      start_nonterminal_(start_nonterminal) {
+      start_nonterminal_(start_nonterminal),
+      prev_start_nonterminal_(start_nonterminal) {
   if (!IsCorrectGrammar() || nonterminals_.find(start_nonterminal_) == nonterminals.end()) {
     throw WrongGrammarException("Grammar is not correct");
   }
 
-  GrammarToNormalForm();
+  AddNewStart();
 }

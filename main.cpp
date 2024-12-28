@@ -24,7 +24,7 @@ int main() {
 	std::string word;
 	std::getline(std::cin, word);
   for (size_t i = 0; i < q; ++i) {
-    std::getline(std::cin, word); 
+    std::getline(std::cin, word);
     std::cout << (check.Predict(word) ? "yes" : "no") << '\n';
   }
 }

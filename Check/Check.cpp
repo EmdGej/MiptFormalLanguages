@@ -1,57 +1,32 @@
 #include "Check.hpp"
 
-bool CheckAlgorithm::Predict(const std::string& word) const {
-  if (word == "") {
-    for (const auto& rule : grammar_.GetRules()) {
-      if (rule.first != grammar_.GetStartNonterminal()) {
-        continue;
-      }
+bool CheckAlgorithm::Predict(const std::string& word) {
+  if (!situations_.empty()) situations_.clear();
 
-      for (int64_t i = 0; i < rule.second.size(); ++i) {
-        if (rule.second[i] == "") {
-          return true;
-        }
-      }
-    }
+  situations_.resize(word.size() + 1);
+  situations_[0].push_back(
+      Situation{grammar_.GetStartNonterminal(),
+                dot + std::string(1, grammar_.GetPrevStartNonterminal()), 0});
 
-    return false;
+  for (int64_t j = 0; j <= word.size(); ++j) {
+    EarleyScan(j, word);
+
+    int64_t prev_situations_size;
+    do {
+      prev_situations_size = situations_[j].size();
+
+      EarleyComplete(j, word);
+      EarleyPredict(j, word);
+    } while (situations_[j].size() != prev_situations_size);
   }
 
-  std::unordered_map<char, std::vector<std::vector<bool>>> dp;
-
-  for (const auto& nonterminal : grammar_.GetNonterminals()) {
-    dp[nonterminal] = std::vector<std::vector<bool>>(
-        word.size(), std::vector<bool>(word.size(), false));
-  }
-
-  for (const auto& rule : grammar_.GetRules()) {
-    for (int64_t k = 0; k < rule.second.size(); ++k) {
-      for (int64_t i = 0; i < word.size(); ++i) {
-        if (rule.second[k].size() == 1 && rule.second[k][0] == word[i]) {
-          dp[rule.first][i][i] = true;
-        }
-      }
+  for (const auto& situation : situations_.back()) {
+    if (situation.from == grammar_.GetStartNonterminal() &&
+        situation.to == grammar_.GetPrevStartNonterminal() + dot &&
+        situation.j == 0) {
+      return true;
     }
   }
 
-  for (int64_t len = 1; len < word.size(); ++len) {
-    for (int64_t i = 0; i + len < word.size(); ++i) {
-      for (const auto& rule : grammar_.GetRules()) {
-        for (int64_t k = 0; k < rule.second.size(); ++k) {
-          if (rule.second[k].size() <= 1) {
-            continue;
-          }
-
-          for (int64_t j = i; j < i + len; ++j) {
-            dp[rule.first][i][i + len] =
-                dp[rule.first][i][i + len] ||
-                dp[rule.second[k][0]][i][j] &&
-                    dp[rule.second[k][1]][j + 1][i + len];
-          }
-        }
-      }
-    }
-  }
-
-  return dp[grammar_.GetStartNonterminal()][0][word.size() - 1];
+  return false;
 }
